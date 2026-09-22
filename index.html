@@ -1,1 +1,270 @@
-<h1>欢迎来到燕燕于飞的主页!</h1>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>代码库</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .container {
+      width: min(1100px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .hero {
+      padding: 64px 0 24px;
+      text-align: center;
+    }
+
+    .avatar {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+    }
+
+    h1 {
+      margin: 16px 0 8px;
+      font-size: 32px;
+    }
+
+    .bio {
+      color: var(--muted);
+      margin: 0 auto 16px;
+      max-width: 600px;
+    }
+
+    .button {
+      display: inline-block;
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .button:hover {
+      border-color: var(--accent);
+    }
+
+    h2 {
+      margin-top: 32px;
+    }
+
+    .projects {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 64px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+
+    .card h3 a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .desc {
+      color: var(--muted);
+      flex: 1;
+      margin: 0 0 12px;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .links {
+      display: flex;
+      gap: 12px;
+    }
+
+    .links a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .links a:hover {
+      text-decoration: underline;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .error {
+      color: #f85149;
+    }
+  </style>
+</head>
+<body>
+  <header class="container hero">
+    <img id="avatar" class="avatar" alt="GitHub 头像" />
+    <h1 id="username"></h1>
+    <p class="bio">
+      三分钟热情之人
+    </p>
+    <a id="profile-link" class="button" href="#" target="_blank" rel="noopener">
+      访问我的 GitHub
+    </a>
+  </header>
+
+  <main class="container">
+    <h2>作品集</h2>
+    <div id="projects" class="projects">
+      <p class="muted">加载中...</p>
+    </div>
+  </main>
+
+  <script>
+    // ====== 这里改成你的信息 ======
+    const GITHUB_USERNAME = 'yyyf2004'; // 改成你的 GitHub 用户名
+    const PINNED_REPOS = []; // 例如 ['blog', 'todo-app']，留空则自动展示所有非 fork 仓库
+    const EXCLUDE_REPOS = []; // 不想展示的仓库名，例如 ['test-demo']
+
+    const projectsEl = document.getElementById('projects');
+    const avatarEl = document.getElementById('avatar');
+    const usernameEl = document.getElementById('username');
+    const profileLinkEl = document.getElementById('profile-link');
+
+    avatarEl.src = `https://github.com/${GITHUB_USERNAME}.png`;
+    usernameEl.textContent = GITHUB_USERNAME;
+    profileLinkEl.href = `https://github.com/${GITHUB_USERNAME}`;
+
+    function escapeHtml(str = '') {
+      return String(str).replace(/[&<>"']/g, (s) => {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;',
+        }[s];
+      });
+    }
+
+    async function loadProjects() {
+      try {
+        const res = await fetch(
+          `https://api.github.com/users/${encodeURIComponent(
+            GITHUB_USERNAME
+          )}/repos?sort=updated&per_page=100`
+        );
+
+        if (!res.ok) {
+          throw new Error(`GitHub API 请求失败：${res.status}`);
+        }
+
+        let repos = await res.json();
+
+        repos = repos.filter(
+          (repo) => !repo.fork && !EXCLUDE_REPOS.includes(repo.name)
+        );
+
+        if (PINNED_REPOS.length > 0) {
+          repos = repos.filter((repo) => PINNED_REPOS.includes(repo.name));
+          repos.sort(
+            (a, b) => PINNED_REPOS.indexOf(a.name) - PINNED_REPOS.indexOf(b.name)
+          );
+        } else {
+          repos.sort(
+            (a, b) =>
+              b.stargazers_count - a.stargazers_count ||
+              new Date(b.updated_at) - new Date(a.updated_at)
+          );
+        }
+
+        if (repos.length === 0) {
+          projectsEl.innerHTML = '<p class="muted">暂无公开项目。</p>';
+          return;
+        }
+
+        projectsEl.innerHTML = repos
+          .map((repo) => {
+            const demoUrl =
+              repo.homepage && /^https?:\/\//.test(repo.homepage)
+                ? repo.homepage
+                : '';
+
+            return `
+              <article class="card">
+                <h3>
+                  <a href="${repo.html_url}" target="_blank" rel="noopener">
+                    ${escapeHtml(repo.name)}
+                  </a>
+                </h3>
+                <p class="desc">${escapeHtml(repo.description || '暂无描述')}</p>
+                <div class="meta">
+                  ${repo.language ? `<span>${escapeHtml(repo.language)}</span>` : ''}
+                  <span>⭐ ${repo.stargazers_count}</span>
+                  <span>🍴 ${repo.forks_count}</span>
+                </div>
+                <div class="links">
+                  <a href="${repo.html_url}" target="_blank" rel="noopener">源码</a>
+                  ${
+                    demoUrl
+                      ? `<a href="${demoUrl}" target="_blank" rel="noopener">Demo</a>`
+                      : ''
+                  }
+                </div>
+              </article>
+            `;
+          })
+          .join('');
+      } catch (err) {
+        projectsEl.innerHTML = `<p class="error">加载失败：${escapeHtml(
+          err.message
+        )}</p>`;
+      }
+    }
+
+    loadProjects();
+  </script>
+</body>
+</html>
